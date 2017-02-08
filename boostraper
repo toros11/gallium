@@ -1,0 +1,87 @@
+#!/bin/bash
+
+sub_cmd_usage ()
+{
+    local commands="${1}"
+    [[ -z $commands ]] && {
+        echo "[ERROR] No operations exists for command: $environment_part."
+        exit 1
+    }
+    [[ $environment_part == "node" || $environment_part == "step" ]] && require_environment
+    cat<<EOT
+
+Operations:
+
+$(for operation in $commands ; do
+    root_path=${root_path} ${root_path}/$environment_part/$operation.sh "simple_usage"
+done
+)
+
+EOT
+}
+
+usage()
+{
+    cat <<EOT
+
+Usage:
+
+This tool can help to manage the build process of a development environment,
+the environment can be managed with the following commands:
+
+$(for c in $commands ; do
+    printf "  %s\n" "${c}"
+done
+)
+
+For more usage of the individual parts and their available operations
+use bootstraper <command> --help
+
+EOT
+}
+
+root_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. ${root_path}/functions.bash
+# commands=$(ls -d ${root_path}/*/ | sed "s,$root_path,,g" | sed 's,/,,g')
+
+environment_part="${1}" ; shift
+[[ -n "${1}" ]] && args=( "${@}" )
+
+
+[[ -n ${environment_part} ]] && {
+    [[ -d ${root_path}/${environment_part} ]] || { echo "[ERROR] Invalid command." ; exit ; }
+    sub_commands=$(
+        cd ${root_path}/${environment_part}
+        find ./*.sh -maxdepth 1 -type f \
+            | sed 's,.sh,,g' \
+            | sed 's,./,,g'
+        )
+} 
+
+commands=$(ls -d ${root_path}/*/| sed "s,$root_path,,g" | sed 's,/,,g')
+is_command=1
+for c in $commands ; do
+    [[ "$environment_part" == "${c}" ]] && {
+        is_command=0
+        break
+        }
+done
+
+case $is_command in
+    0)
+        if [[ -z "$args" ]] ; then
+            sub_cmd_usage "$sub_commands"
+        else
+            operation="${root_path}/$environment_part/${args[0]}"
+            unset args[0]
+            if [[ -f "${operation}.sh" ]] ; then
+                root_path=${root_path} "${operation}.sh" "${args[@]}"
+            else
+                echo "[ERROR]: Missing operation: ${operation#*/}."
+            fi
+        fi
+        ;;
+    1)
+        usage
+       ;;
+esac
