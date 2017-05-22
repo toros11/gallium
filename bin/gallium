@@ -1,0 +1,89 @@
+#!/bin/bash
+
+sub_cmd_usage ()
+{
+    local commands="${1}"
+    if [[ -z $commands ]]; then
+        echo "[ERROR] No operations exists for command: $environment_operation."
+        exit 1
+    fi
+
+    [[ $environment_operation == "node" || $environment_operation == "step" ]] && require_environment
+    cat<<EOT
+
+Operations:
+
+$(for operation in $commands ; do
+    root_path=${root_path} ${root_path}/$environment_operation/$operation.sh "simple_usage"
+done
+)
+
+EOT
+}
+
+usage()
+{
+    cat <<EOT
+
+Usage:
+
+This tool can help to manage the build process of a development environment,
+the environment can be managed with the following commands:
+
+$(for c in $commands ; do
+    printf "  %s\n" "${c}"
+done
+)
+
+For more usage of the individual operations and their available operations
+use gallium <command> --help
+
+EOT
+}
+
+#root_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+root_path="$(cd "$(dirname $(greadlink -f "${BASH_SOURCE[0]}"))" && pwd -P)"
+. ${root_path}/../functions.bash
+# commands=$(ls -d ${root_path}/*/ | sed "s,$root_path,,g" | sed 's,/,,g')
+
+environment_operation="${1}" ; shift
+[[ -n "${1}" ]] && args=( "${@}" )
+
+
+if [[ -n ${environment_operation} ]]; then
+    [[ -d ${root_path}/${environment_operation} ]] || { echo "[ERROR] Invalid command." ; exit ; }
+    sub_commands=$(
+        cd ${root_path}/${environment_operation}
+        find ./*.sh -maxdepth 1 -type f \
+            | sed 's,.sh,,g' \
+            | sed 's,./,,g'
+        )
+fi
+
+commands=$(ls -d ${root_path}/*/| sed "s,$root_path,,g" | sed 's,/,,g')
+is_command=1
+for c in $commands ; do
+    if [[ "$environment_operation" == "${c}" ]]; then
+        is_command=0
+        break
+    fi
+done
+
+case $is_command in
+    0)
+        if [[ -z "$args" ]] ; then
+            sub_cmd_usage "$sub_commands"
+        else
+            operation="${root_path}/$environment_operation/${args[0]}"
+            unset args[0]
+            if [[ -f "${operation}.sh" ]] ; then
+                root_path=${root_path} "${operation}.sh" "${args[@]}"
+            else
+                echo "[ERROR]: Missing operation: ${operation#*/}."
+            fi
+        fi
+        ;;
+    1)
+        usage
+       ;;
+esac
