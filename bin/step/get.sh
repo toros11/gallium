@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+# not sure if this should be kept
+
 . ${root_path}/../functions.bash
 require_environment
 

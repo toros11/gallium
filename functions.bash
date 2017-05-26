@@ -22,8 +22,8 @@ require_environment ()
 
     if [[ -f "${folder}/.envfile" ]] ; then
         . "${folder}/.envfile"
-        : ${env_root_path}="?:Missing variable $root_path."
-        exit 0
+        : "${env_root_path?:"Missing variable \$root_path."}"
+        return 0
     fi
     require_environment "$(dirname ${folder})"
 }

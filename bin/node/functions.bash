@@ -42,15 +42,15 @@ render_vif_cfg ()
             exit 1
         }
         cat <<EOF >> "${env_root_path}/nodes/${node}/guestroot/etc/sysconfig/network-scripts/ifcfg-${tap}"
-DEVICE=${tap}
+DEVICE=${tap:-eth0}
 ONBOOT=yes
 NW_CONTROLLED=no
-TYPE=${type}
-IPADDR=${ip}
+TYPE=${type:-ethernet}
+IPADDR=${ip:-10.0.2.15}
 NETMASK=255.255.255.0
 EOF
 
-        echo "nics+=( name=tap_${tap} hwaddr=${mac} bridge=${bridge} )" >> "${env_root_path}/nodes/${node}/datadir.conf"
+        echo "nics+=( name=tap_${tap:-eth0} hwaddr=${mac} bridge=${bridge} )" >> "${env_root_path}/nodes/${node}/datadir.conf"
     )
 }
 
@@ -61,7 +61,7 @@ render_network ()
     mkdir -p "${env_root_path}/nodes/${node}/guestroot/etc/sysconfig"
     cat <<EOF > "${env_root_path}/nodes/${node}/guestroot/etc/sysconfig/network"
 NETWORKING=yes
-HOSTNAME=${hostname}
+HOSTNAME=${node}
 EOF
     if [[ -n "${gw}" ]] ; then
         echo "GATEWAY=${gw}" >> "${env_root_path}/nodes/${node}/guestroot/etc/sysconfig/network"
